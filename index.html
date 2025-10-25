@@ -183,7 +183,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         // --- DATA STORE ---
-        // 이 곳에 CSV_CONTENTS 데이터를 붙여넣으세요.
+
         const CSV_CONTENTS = { '재활용품목': `재질/상세,쓰레기종류,배출요령,주의사항/처리방법
 음식물 잔여,일반쓰레기,비닐봉투에 담아 배출,습기 제거 소각
 휴지,일반쓰레기,물기 제거,소각
@@ -979,7 +979,7 @@ OTHER,Other (복합재질),아더 (혼합 플라스틱),"두 가지 이상의 �
 충청북도,음성군,음성군 전역,종량제봉투,RFID,요일별 배출,일+월+화+수+목+금,19:00,04:00,일+월+화+수+목+금,19:00,04:00,동별 상이,19:00,04:00,자원순환과,043-871-2240
 충청북도,단양군,단양군 전역,종량제봉투,RFID,요일별 배출,일+월+화+수+목+금,19:00,04:00,일+월+화+수+목+금,19:00,04:00,동별 상이,19:00,04:00,자원순환과,043-420-2240`,};
 
-        const dataStore = {};
+     const dataStore = {};
 
         // 1번 기능: JS 변수
         let ALL_CITIES_DATA = {}; // 시/도별 시/군/구 목록 객체
@@ -1179,8 +1179,8 @@ function searchRegionalData(province, address) {
             safeCreateIcons();
         }
 
-        // 1번 기능: 현재 위치 가져오기 함수
-async function getCurrentLocation() {
+        // 1번 기능: 현재 위치 가져오기 함수 (Promise 부분 복구됨)
+       async function getCurrentLocation() {
             closeAllLists();
             const infoDiv = document.getElementById('disposalInfo');
             infoDiv.innerHTML = `<div class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">위치 정보를 가져오는 중...</div>`;
@@ -1487,11 +1487,18 @@ function updateAddressAutocomplete(province) {
             }
         }
 
+        /**
+         * 3. (API CALL) Gemini Vision API를 호출하는 함수 (수정됨)
+         */
+      async function callGeminiVisionAPI(base64Image, mimeType, prompt) {
+            // API 키 관련 변수 및 payload 제거 완료
+            
+            const finalUrl = '/api/gemini-vision'; // Vercel 서버 주소
+
             try {
                 const response = await fetch(finalUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // [수정] 서버로 필요한 모든 정보를 전달
                     body: JSON.stringify({
                         base64Image: base64Image,
                         mimeType: mimeType,
@@ -1505,7 +1512,7 @@ function updateAddressAutocomplete(province) {
                     throw new Error(`API call failed: ${response.status} ${response.statusText}`);
                 }
 
-                const result = await response.json(); // 서버가 전달해준 결과
+                const result = await response.json(); 
 
                 if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0].text) {
                     return result.candidates[0].content.parts[0].text;
@@ -1518,6 +1525,7 @@ function updateAddressAutocomplete(province) {
                 return "죄송합니다. AI 서버 연결에 문제가 발생했습니다.";
             }
         }
+        // <<< 이전 답변에서 삭제하라고 했던 중복 코드가 여기에 없습니다 (정상)
     </script>
 </body>
 </html>
