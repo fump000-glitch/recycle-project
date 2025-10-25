@@ -60,7 +60,7 @@
 
     <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl">
         <h1 class="text-4xl font-extrabold text-gray-900 mb-2 text-center">우리동네 분리수거 도우미</h1>
-        <p class="text-center text-gray-500 mb-8">서비스 지역: 전국 (정보공개포털기준)</p>
+        <p class="text-center text-gray-500 mb-8">서비스 지역: 전국</p>
 
         <div class="space-y-4 mb-8 p-6 bg-gray-50 rounded-lg border">
              <h2 class="text-xl font-semibold text-gray-700">1. 우리 동네 배출 요일 및 시간 찾기</h2>
@@ -1359,22 +1359,39 @@ document.addEventListener('DOMContentLoaded', function() {
         "경상북도","경상남도","제주특별자치도"
     ];
 
-// ✅ 주소 자동완성 초기화 (시도 선택 시마다 업데이트)
-        function updateAddressAutocomplete(province) {
+    // ✅ 주소 자동완성 초기화 (시도 선택 시마다 업데이트)
+function updateAddressAutocomplete(province) {
             // ... (중략) ...
-            let currentAddressList; 
+            let currentAddressList; // [수정] = ALL_CITIES_DATA[key] || []; 부분 제거
 
             // 전국 선택 시 모든 지역명 병합
             if (province === "전국") {
-                // ... (전국 로직은 그대로) ...
+                // [수정 시작]
+                currentAddressList = [];
+                const addedCities = new Set(); // 상세 지역 데이터(동/읍/면) 중복 제거용
+                ALL_PROVINCES.forEach(provName => {
+                    const regionData = dataStore[provName]; // '서울특별시' 등의 원본 데이터
+                    if (regionData) {
+                        regionData.forEach(item => {
+                            const sigungu = item['시군구명'];
+                            const sido = item['시도명'];
+                            // "시군구명 (시도명)" 형식의 고유한 이름을 생성
+                            const uniqueName = `${sigungu} (${sido})`; 
+                            
+                            if (sigungu && sido && !addedCities.has(uniqueName)) {
+                                currentAddressList.push(uniqueName);
+                                addedCities.add(uniqueName);
+                            }
+                        });
+                    }
+                });
+                // [수정 끝]
             } else {
                  // [수정] "전국"이 아닐 때의 로직
                  let key = province;
                  if (province === "전라북도") key = "전북특별자치도";
                  if (province === "전북특별자치도") key = "전북특별자치도";
-                 
-                 // ▼▼▼ [수정] 아래 코드로 변경 ▼▼▼
-                 currentAddressList = ALL_CITIES_DATA[key] || ALL_CITIES_DATA["전북특별자치도"] || [];
+                 currentAddressList = ALL_CITIES_DATA[key] || [];
             }
 
             autocomplete(addressInput, currentAddressList, handleSearch);
@@ -1512,4 +1529,3 @@ document.addEventListener('DOMContentLoaded', function() {
     </script>
 </body>
 </html>
-
