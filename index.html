@@ -987,12 +987,6 @@ OTHER,Other (복합재질),아더 (혼합 플라스틱),"두 가지 이상의 �
         // 2번 기능: JS 변수
         let RECYCLING_ITEM_LIST = []; // 품목 검색용 리스트
 
-        // AI 챗봇 관련 상수
-        const API_URL_TEXT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent';
-        const API_KEY = "AIzaSyD06Ea2CGbQtLTwFPayf9Z6C-0Jbg651UM"; // 사용자가 제공한 키
-        const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-        const GEMINI_MODEL = 'gemini-2.5-flash-preview-05-20';
-
         // === 모든 함수 정의 (*** 전역 스코프 ***) ===
 
         // CSV 파싱 함수
@@ -1190,30 +1184,36 @@ async function getCurrentLocation() {
             closeAllLists();
             const infoDiv = document.getElementById('disposalInfo');
             infoDiv.innerHTML = `<div class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">위치 정보를 가져오는 중...</div>`;
-            if (!navigator.geolocation) { /* ... 생략 ... */ }
+            if (!navigator.geolocation) { infoDiv.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-lg">이 브라우저는 위치 정보 기능을 지원하지 않습니다.</div>`; return; }
            try {
-                const pos = await new Promise(/* ... 생략 ... */);
+                // ▼▼▼ 이 부분을 원래대로 복구 ▼▼▼
+                const pos = await new Promise((resolve, reject) => { 
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 }); 
+                });
+                // ▲▲▲ 여기까지 복구 ▲▲▲
+
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
 
                 const finalUrl = '/api/kakao-geocode';
 
-                const response = await fetch(finalUrl, { /* ... 생략 ... */ });
+                const response = await fetch(finalUrl, { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat: lat, lon: lon }) 
+                });
                 const data = await response.json();
 
-                // ▼▼▼ [디버깅 로그 1] Vercel 서버로부터 받은 데이터 확인 ▼▼▼
-                console.log("Received data from /api/kakao-geocode:", data);
+                console.log("Received data from /api/kakao-geocode:", data); // 디버깅 로그 1
 
                 if (!data.documents || data.documents.length === 0) {
-                    // ▼▼▼ [디버깅 로그 2] 주소 변환 실패 시 ▼▼▼
-                    console.error("Address conversion failed, data:", data);
+                    console.error("Address conversion failed, data:", data); // 디버깅 로그 2
                     infoDiv.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-lg">주소 변환에 실패했습니다. (응답 데이터 확인 필요)</div>`; return;
                 }
                 const province = data.documents[0].address.region_1depth_name;
                 const city = data.documents[0].address.region_2depth_name;
 
-                // ▼▼▼ [디버깅 로그 3] 추출된 시/도, 시/군/구 확인 ▼▼▼
-                console.log("Extracted Province:", province, "City:", city);
+                console.log("Extracted Province:", province, "City:", city); // 디버깅 로그 3
 
                 const provinceSelect = document.getElementById('provinceSelect');
                 let provinceMatch = false;
@@ -1226,8 +1226,7 @@ async function getCurrentLocation() {
                     }
                 }
 
-                // ▼▼▼ [디버깅 로그 4] 시/도 매칭 결과 확인 ▼▼▼
-                console.log("Province matched:", provinceMatch);
+                console.log("Province matched:", provinceMatch); // 디버깅 로그 4
 
                 if (!provinceMatch) {
                     infoDiv.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-lg"><b>서비스 지역이 아닙니다.</b><br>현재 위치(${province} ${city})의 시/도(${province}) 정보를 앱의 목록(${Array.from(provinceSelect.options).map(o => o.value).join(', ')})에서 찾을 수 없습니다.</div>`;
@@ -1236,17 +1235,14 @@ async function getCurrentLocation() {
 
                 document.getElementById('addressInput').value = city;
 
-                // ▼▼▼ [디버깅 로그 5] handleSearch 호출 직전 확인 ▼▼▼
-                console.log("Calling handleSearch()...");
+                console.log("Calling handleSearch()..."); // 디버깅 로그 5
                 handleSearch();
 
             } catch (error) {
-                // ▼▼▼ [디버깅 로그 6] 에러 발생 시 상세 내용 확인 ▼▼▼
-                console.error("Error in getCurrentLocation function:", error);
+                console.error("Error in getCurrentLocation function:", error); // 디버깅 로그 6
                 infoDiv.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-lg">위치 정보를 가져오는 중 오류가 발생했습니다. (콘솔 확인)</div>`;
             }
         }
-
         // AI 챗봇: 채팅창 토글 함수
         function toggleChat() { const chatBox = document.getElementById('ai-chat-box'); const btn = document.getElementById('chat-toggle-btn'); const isHidden = chatBox.style.display === 'none' || chatBox.style.display === ''; chatBox.style.display = isHidden ? 'flex' : 'none'; btn.innerHTML = isHidden ? `<i data-lucide="x" class="w-7 h-7"></i>` : `<i data-lucide="message-square" class="w-7 h-7"></i>`; safeCreateIcons(); if (isHidden) { const messages = document.getElementById('chat-messages'); messages.scrollTop = messages.scrollHeight; } }
 
@@ -1490,16 +1486,6 @@ function updateAddressAutocomplete(province) {
                 safeCreateIcons();
             }
         }
-
-        /**
-         * 3. (API CALL) Gemini Vision API를 호출하는 함수
-         */
-      async function callGeminiVisionAPI(base64Image, mimeType, prompt) {
-            // [제거] const MODEL_NAME = ...
-            // [제거] const VISION_API_URL = ...
-            // [제거] const payload = { ... };
-            
-            const finalUrl = '/api/gemini-vision'; // [수정] Vercel 서버 주소로 변경
 
             try {
                 const response = await fetch(finalUrl, {
